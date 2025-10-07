@@ -10,7 +10,7 @@ module.exports = {
     },
     {
       name: 'mcp-server',
-      script: 'mcp_server.js',
+      script: 'mcp_server.mjs',
       watch: true,
       env: {
         "NODE_ENV": "production",
