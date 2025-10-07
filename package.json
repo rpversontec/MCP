@@ -1,0 +1,19 @@
+{
+  "name": "ejemplomcp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.19.1",
+    "axios": "^1.12.2",
+    "express": "^5.1.0",
+    "pm2": "^6.0.13",
+    "zod": "^3.25.76"
+  }
+}
