@@ -8,14 +8,14 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Instala las dependencias de producción
-# Nota: pm2 puede seguir instalado si está en "dependencies", pero ya no se usa.
 RUN npm install --production
 
 # Copia el resto del código de la aplicación
 COPY . .
 
-# Expone el puerto en el que corre nuestro servidor unificado
+# Expone los puertos para el servidor principal (3000) y el proxy (4000)
 EXPOSE 3000
+EXPOSE 4000
 
-# El comando para iniciar la aplicación
-CMD [ "node", "server.js" ]
+# El comando para iniciar ambos servidores usando pm2
+CMD [ "./node_modules/.bin/pm2-runtime", "ecosystem.config.js" ]

@@ -1,0 +1,31 @@
+{
+  "name": "createTask",
+  "description": "Usa esta herramienta para crear una nueva tarea en la lista de pendientes. El LLM debe extraer el contenido de la tarea del prompt del usuario.",
+  "spec": {
+    "url": "https://<URL_DE_TU_APP_DESPLEGADA>/mcp",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "context": {
+        "request_id": "{{request.id}}",
+        "session_id": "{{session.id}}"
+      },
+      "invocation": {
+        "tool_name": "createTask",
+        "input": {
+          "text": "{{parameters.text}}"
+        }
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "text",
+      "type": "string",
+      "description": "El contenido detallado de la tarea que se va a crear.",
+      "required": true
+    }
+  ]
+}
