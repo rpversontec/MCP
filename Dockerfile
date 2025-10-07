@@ -20,4 +20,4 @@ EXPOSE 4000
 
 # El comando para iniciar la aplicación usando pm2-runtime
 # pm2-runtime está diseñado específicamente para contenedores Docker
-CMD [ "pm2-runtime", "ecosystem.config.js" ]
+CMD [ "./node_modules/.bin/pm2-runtime", "ecosystem.config.js" ]
