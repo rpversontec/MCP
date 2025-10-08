@@ -18,4 +18,4 @@ EXPOSE 3000
 EXPOSE 4000
 
 # El comando para iniciar ambos servidores usando pm2
-CMD [ "./node_modules/.bin/pm2-runtime", "ecosystem.config.js" ]
+CMD [ "./node_modules/.bin/pm2-runtime", "ecosystem.config.cjs" ]
