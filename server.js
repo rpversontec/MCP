@@ -1,10 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
-import { z } from 'zod';
+import cors from 'cors';
 
 // --- Express App Setup ---
 const app = express();
+app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -105,6 +106,11 @@ mcpServer.registerTool(
         };
     }
 );
+
+// GET handler for testing MCP endpoint connectivity
+app.get('/mcp', (req, res) => {
+  res.status(200).json({ message: 'MCP endpoint is active. Please use POST for tool invocations.' });
+});
 
 // MCP endpoint
 app.post('/mcp', async (req, res) => {
