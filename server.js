@@ -1,4 +1,4 @@
-const { McpServer, StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/server/mcp.js');
+const { McpServer, StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const express = require('express');
 const cors = require('cors');
 const { z } = require('zod');
