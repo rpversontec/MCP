@@ -2,7 +2,7 @@
   "name": "ejemplomcp",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "module",
+
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,6 +13,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.19.1",
     "axios": "^1.12.2",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "pm2": "^6.0.13",
     "zod": "^3.25.76"

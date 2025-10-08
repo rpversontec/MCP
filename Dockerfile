@@ -13,9 +13,8 @@ RUN npm install --production
 # Copia el resto del código de la aplicación
 COPY . .
 
-# Expone los puertos para el servidor principal (3000) y el proxy (4000)
+# Expone el puerto en el que corre nuestro servidor unificado
 EXPOSE 3000
-EXPOSE 4000
 
-# El comando para iniciar ambos servidores usando pm2
-CMD [ "./node_modules/.bin/pm2-runtime", "ecosystem.config.cjs" ]
+# El comando para iniciar la aplicación
+CMD [ "node", "server.js" ]

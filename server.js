@@ -1,29 +1,22 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import express from 'express';
-import cors from 'cors';
+const { McpServer, StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/server/mcp.js');
+const express = require('express');
+const cors = require('cors');
+const { z } = require('zod');
 
-// --- Express App Setup ---
+// --- Main App and Server Setup ---
 const app = express();
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
 app.use(express.static('public'));
 
-// --- To-Do List In-Memory Database and API Logic ---
+// --- To-Do List In-Memory Database ---
 let tasks = [
     { id: 1, text: 'Aprender Node.js', completed: false },
     { id: 2, text: 'Crear una API REST', completed: true },
 ];
 let nextId = 3;
 
-const apiRouter = express.Router();
-
-// GET /api/tasks - Get all tasks
-apiRouter.get('/tasks', (req, res) => {
-    res.json(tasks);
-});
-
-// Function to add a task (will be used by API and MCP)
+// --- Internal Business Logic ---
 const addTask = (text) => {
     const newTask = {
         id: nextId++,
@@ -34,103 +27,70 @@ const addTask = (text) => {
     return newTask;
 };
 
-// POST /api/tasks - Create a new task
+// --- To-Do List API ---
+const apiRouter = express.Router();
+apiRouter.get('/tasks', (req, res) => res.json(tasks));
 apiRouter.post('/tasks', (req, res) => {
-    const { text } = req.body;
-    if (!text) {
-        return res.status(400).json({ error: 'El texto de la tarea es requerido' });
-    }
-    const newTask = addTask(text);
-    res.status(201).json(newTask);
+    if (!req.body.text) return res.status(400).json({ error: 'El texto de la tarea es requerido' });
+    res.status(201).json(addTask(req.body.text));
 });
-
-// PUT /api/tasks/:id - Update a task
-apiRouter.put('/tasks/:id', (req, res) => {
-    const { id } = req.params;
-    const { text, completed } = req.body;
-    const task = tasks.find(t => t.id === parseInt(id));
-
-    if (!task) {
-        return res.status(404).json({ error: 'Tarea no encontrada' });
-    }
-
-    if (text !== undefined) {
-        task.text = text;
-    }
-    if (completed !== undefined) {
-        task.completed = completed;
-    }
-    res.json(task);
-});
-
-// DELETE /api/tasks/:id - Delete a task
-apiRouter.delete('/tasks/:id', (req, res) => {
-    const { id } = req.params;
-    const taskIndex = tasks.findIndex(t => t.id === parseInt(id));
-
-    if (taskIndex === -1) {
-        return res.status(404).json({ error: 'Tarea no encontrada' });
-    }
-    tasks.splice(taskIndex, 1);
-    res.status(204).send();
-});
-
 app.use('/api', apiRouter);
 
-
-// --- MCP Server Logic ---
-const mcpServer = new McpServer({
-    name: 'unified-todo-server',
-    version: '1.0.0'
+// --- MCP Server for MCP Inspector ---
+const mcpServer = new McpServer({ name: 'all-in-one-server', version: '1.0.0' });
+mcpServer.registerTool('createTask', {
+    title: 'Create Task Tool',
+    description: 'Creates a new task in the to-do list',
+    inputSchema: { text: z.string() },
+    outputSchema: z.object({ id: z.number(), text: z.string(), completed: z.boolean() })
+}, async ({ text }) => {
+    const newTask = addTask(text);
+    return { content: [{ type: 'text', text: JSON.stringify(newTask) }], structuredContent: newTask };
 });
 
-// Register a tool to create a task
-mcpServer.registerTool(
-    'createTask',
-    {
-        title: 'Create Task Tool',
-        description: 'Creates a new task in the to-do list',
-        inputSchema: { text: z.string().describe('The content of the task') },
-        outputSchema: z.object({
-            id: z.number(),
-            text: z.string(),
-            completed: z.boolean()
-        })
-    },
-    async ({ text }) => {
-        // Directly call the internal function instead of using axios
-        const newTask = addTask(text);
-        return {
-            content: [{ type: 'text', text: `Tarea creada: ${JSON.stringify(newTask)}` }],
-            structuredContent: newTask
-        };
-    }
-);
-
-// GET handler for testing MCP endpoint connectivity
-app.get('/mcp', (req, res) => {
-  res.status(200).json({ message: 'MCP endpoint is active. Please use POST for tool invocations.' });
-});
-
-// MCP endpoint
+app.get('/mcp', (req, res) => res.json({ message: 'MCP endpoint is active. Use POST.' }));
 app.post('/mcp', async (req, res) => {
-    const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: undefined,
-        enableJsonResponse: true
-    });
+    const transport = new StreamableHTTPServerTransport({ enableJsonResponse: true });
     res.on('close', () => transport.close());
     await mcpServer.connect(transport);
     await transport.handleRequest(req, res, req.body);
 });
 
+// --- OpenAPI Proxy for OpenWebUI ---
+const openApiSpec = {
+    openapi: '3.0.0',
+    info: { title: 'To-Do App Tools', version: '1.0.0' },
+    paths: {
+        '/createTask': {
+            post: {
+                summary: 'Create a new task',
+                operationId: 'createTask',
+                requestBody: {
+                    required: true,
+                    content: { 'application/json': { schema: { type: 'object', properties: { text: { type: 'string' } } } } }
+                },
+                responses: { '200': { description: 'Task created' } }
+            }
+        }
+    }
+};
 
-// --- Start Server ---
+app.get('/openapi.json', (req, res) => res.json(openApiSpec));
+app.post('/createTask', (req, res) => {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: 'The "text" field is required.' });
+    const newTask = addTask(text);
+    res.status(201).json(newTask);
+});
+
+// --- Start the All-in-One Server ---
 const port = parseInt(process.env.PORT || '3000');
 app.listen(port, () => {
-    console.log(`Unified Server listening on http://localhost:${port}`);
-    console.log(`- To-Do App available at http://localhost:${port}`);
-    console.log(`- MCP endpoint available at http://localhost:${port}/mcp`);
-}).on('error', error => {
+    console.log(`All-in-One Server listening on port ${port}`);
+    console.log(`- To-Do App UI: http://localhost:${port}`);
+    console.log(`- MCP Endpoint: http://localhost:${port}/mcp`);
+    console.log(`- OpenAPI Spec: http://localhost:${port}/openapi.json`);
+}).on('error', (error) => {
     console.error('Server error:', error);
     process.exit(1);
 });
